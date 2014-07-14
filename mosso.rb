@@ -33,13 +33,15 @@ class Mosso
 
   TERMINATOR = "\n\n"
 
-  def initialize(stdin,stdout)
-    Syslog.open("mosso",Syslog::LOG_PID,Syslog::LOG_MAIL)
+  attr_accessor :attributes, :buffer
+
+  def initialize(stdin=STDIN,stdout=STDOUT)
     @stdin = stdin
     @stdout = stdout
     $stdout.sync = true
     @buffer=[]
     @attributes={}
+    @geoip=GeoIP.new('/usr/share/GeoIP/GeoIP.dat',:preload=>true)
   end
 
   def run
@@ -50,17 +52,16 @@ class Mosso
 
   def receive_line(line)
     unless line.empty?
-      @buffer << line
+      buffer << line
     else
-      @buffer.each do |bline|
+      buffer.each do |bline|
         key, value = bline.split( '=' )
-        @attributes[key.to_sym] = value.strip unless value.nil?
+        attributes[key.to_sym] = value.strip unless value.nil?
       end
-      Syslog.log(Syslog::LOG_INFO, "client_address=%s", @attributes[:client_address])
-      Syslog.log(Syslog::LOG_INFO, "sasl_sender=%s", @attributes[:sasl_sender])
+      log "client_address=#{attributes[:client_address]} sasl_username=#{attributes[:sasl_username]} country=#{country}"
       response "DUNNO"
-      @buffer.clear
-      @attributes.clear
+      buffer.clear
+      attributes.clear
     end
   end
 
@@ -68,9 +69,21 @@ class Mosso
     @stdout.puts "action=#{action}#{TERMINATOR}"
   end
 
+  def country
+    begin
+      @geoip.country(attributes[:client_address]).country_code2
+    rescue SocketError
+      '--'
+    end
+  end
+
+  def log(str)
+    Syslog.log(Syslog::LOG_INFO, str) if Syslog.opened?
+  end
 end
 
 if __FILE__==$0
+  Syslog.open("mosso",Syslog::LOG_PID,Syslog::LOG_MAIL)
   app = Mosso.new(STDIN,STDOUT)
   app.run
 end

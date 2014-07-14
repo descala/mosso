@@ -10,7 +10,7 @@ Usage
 
 Append to your master.cf
                                                                             
-   mosso  unix  -   n   n   -   0   spawn   user=nobody argv=/path/to/mosso
+   mosso  unix  -   n   n   -   0   spawn   user=nobody argv=/path/to/mosso.rb
                                                                             
  in your main.cf
                                                                             
@@ -18,3 +18,8 @@ Append to your master.cf
      ...
      reject_unauth_destination
      check_policy_service unix:private/mosso
+
+GeoIP
+-----
+
+    apt-get install geoip-database-contrib
