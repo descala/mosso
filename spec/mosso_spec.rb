@@ -26,10 +26,17 @@ EOI
   it "uses geoip" do
     m=Mosso.new
     m.attributes[:client_address]='1.2.3.4'
-    expect(m.country).to eq('AU')
+    expect(m.get_country_code).to eq('AU')
     m.attributes[:client_address]='  '
-    expect(m.country).to eq('--')
+    expect(m.get_country_code).to eq('--')
     m.attributes[:client_address]='176.111.36.1'
-    expect(m.country).to eq('UA')
+    expect(m.get_country_code).to eq('UA')
+  end
+  it "records first as allowed country" do
+    m=Mosso.new
+    m.redis.del "countries:me@example.tld" # cleanup
+    expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
+    expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/not allowed/)
   end
 end

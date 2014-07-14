@@ -28,12 +28,14 @@ require 'bundler/setup'
 
 require 'geoip'
 require 'syslog'
+require 'redis'
 
 class Mosso
 
   TERMINATOR = "\n\n"
 
   attr_accessor :attributes, :buffer
+  attr_reader :redis
 
   def initialize(stdin=STDIN,stdout=STDOUT)
     @stdin = stdin
@@ -42,6 +44,8 @@ class Mosso
     @buffer=[]
     @attributes={}
     @geoip=GeoIP.new('/usr/share/GeoIP/GeoIP.dat',:preload=>true)
+    @redis=Redis.new
+    @fqdn=`hostname -f`.strip
   end
 
   def run
@@ -58,18 +62,50 @@ class Mosso
         key, value = bline.split( '=' )
         attributes[key.to_sym] = value.strip unless value.nil?
       end
-      log "client_address=#{attributes[:client_address]} sasl_username=#{attributes[:sasl_username]} country=#{country}"
-      response "DUNNO"
+      response(decide(attributes[:client_address],attributes[:sasl_username],get_country_code))
       buffer.clear
       attributes.clear
     end
+  end
+
+  def decide(ip,user,country)
+    if user.nil? or user.empty?
+      "DUNNO"
+    else
+      log "client_address=#{ip} sasl_username=#{user} country=#{country}"
+      key="countries:#{user}"
+      if redis.scard(key)>0
+        if redis.sismember(key, country)
+          "DUNNO"
+        else
+          warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
+          tell_postmaster warning
+          warning
+        end
+      else
+        # new user
+        redis.sadd(key, country)
+        "DUNNO"
+      end
+    end
+  end
+
+  def tell_postmaster(msg)
+    postmaster="postmaser@#{@fqdn}"
+    cmd="swaks -h-From '#{postmaster}' -t '#{postmaster}' --h-Subject '#{msg}' --body '#{msg}'"
+    if __FILE__==$0
+      `cmd`
+    else
+      puts cmd
+    end
+    cmd
   end
 
   def response(action)
     @stdout.puts "action=#{action}#{TERMINATOR}"
   end
 
-  def country
+  def get_country_code
     begin
       @geoip.country(attributes[:client_address]).country_code2
     rescue SocketError
@@ -78,8 +114,13 @@ class Mosso
   end
 
   def log(str)
-    Syslog.log(Syslog::LOG_INFO, str) if Syslog.opened?
+    if __FILE__==$0
+      Syslog.log(Syslog::LOG_INFO, str) if Syslog.opened?
+    else
+      puts str
+    end
   end
+
 end
 
 if __FILE__==$0

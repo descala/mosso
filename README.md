@@ -19,7 +19,7 @@ Append to your master.cf
      reject_unauth_destination
      check_policy_service unix:private/mosso
 
-GeoIP
------
+Requisites
+----------
 
-    apt-get install geoip-database-contrib
+    apt-get install geoip-database-contrib swaks
