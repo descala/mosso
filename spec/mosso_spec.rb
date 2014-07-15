@@ -32,11 +32,16 @@ EOI
     m.attributes[:client_address]='176.111.36.1'
     expect(m.get_country_code).to eq('UA')
   end
-  it "records first as allowed country" do
+  it "records first as allowed country & blocks if abused" do
     m=Mosso.new
+    m.block_time=1
     m.redis.del "countries:me@example.tld" # cleanup
+    m.redis.del "justblock:me@example.tld"
     expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
     expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
-    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/not allowed/)
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/WARN/)
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/REJECT/)
+    sleep 2 # TODO avoid delaying test
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/WARN/)
   end
 end

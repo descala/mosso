@@ -34,7 +34,7 @@ class Mosso
 
   TERMINATOR = "\n\n"
 
-  attr_accessor :attributes, :buffer
+  attr_accessor :attributes, :buffer, :block_time
   attr_reader :redis
 
   def initialize(stdin=STDIN,stdout=STDOUT)
@@ -46,6 +46,7 @@ class Mosso
     @geoip=GeoIP.new('/usr/share/GeoIP/GeoIP.dat',:preload=>true)
     @redis=Redis.new
     @fqdn=`hostname -f`.strip
+    @block_time=60
   end
 
   def run
@@ -78,9 +79,16 @@ class Mosso
         if redis.sismember(key, country)
           "DUNNO"
         else
-          warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
-          tell_postmaster warning
-          warning
+          block_key="justblock:#{user}"
+          if redis.exists(block_key)
+            redis.setex block_key, block_time, country
+            "REJECT Suspicious activity from #{ip} in #{country} has been blocked. Please try again later or contact the administrator."
+          else
+            redis.setex block_key, block_time, country
+            warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
+            tell_postmaster warning
+            warning
+          end
         end
       else
         # new user
@@ -91,10 +99,10 @@ class Mosso
   end
 
   def tell_postmaster(msg)
-    postmaster="postmaser@#{@fqdn}"
+    postmaster="postmaster@#{@fqdn}"
     cmd="swaks -h-From '#{postmaster}' -t '#{postmaster}' --h-Subject '#{msg}' --body '#{msg}'"
     if __FILE__==$0
-      `cmd`
+      `#{cmd}`
     else
       puts cmd
     end
