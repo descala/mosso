@@ -30,7 +30,7 @@ require 'geoip'
 require 'syslog'
 require 'redis'
 
-require './whitelist.rb'
+require File.expand_path('../whitelist.rb', __FILE__)
 
 class Mosso
 
