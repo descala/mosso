@@ -35,6 +35,7 @@ EOI
   it "records first as allowed country & blocks if abused" do
     m=Mosso.new
     m.block_time=1
+    m.whitelist=[]
     m.redis.del "countries:me@example.tld" # cleanup
     m.redis.del "justblock:me@example.tld"
     expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
@@ -43,5 +44,17 @@ EOI
     expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/REJECT/)
     sleep 2 # TODO avoid delaying test
     expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/WARN/)
+  end
+  it "has a whitelist" do
+    m=Mosso.new
+    m.whitelist=['UA']
+    m.redis.del "countries:me@example.tld" # cleanup
+    m.redis.del "justblock:me@example.tld"
+    expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/has moved to .* whitelisted country/)
+  end
+  it "has a default whitelist" do
+    m=Mosso.new
+    expect(m.whitelist).to include('ES')
   end
 end

@@ -30,11 +30,13 @@ require 'geoip'
 require 'syslog'
 require 'redis'
 
+require './whitelist.rb'
+
 class Mosso
 
   TERMINATOR = "\n\n"
 
-  attr_accessor :attributes, :buffer, :block_time
+  attr_accessor :attributes, :buffer, :block_time, :whitelist
   attr_reader :redis
 
   def initialize(stdin=STDIN,stdout=STDOUT)
@@ -47,6 +49,11 @@ class Mosso
     @redis=Redis.new
     @fqdn=`hostname -f`.strip
     @block_time=60
+    begin
+      @whitelist=WHITELIST
+    rescue NameError
+      @whitelist=[]
+    end
   end
 
   def run
@@ -79,15 +86,22 @@ class Mosso
         if redis.sismember(key, country)
           "DUNNO"
         else
-          block_key="justblock:#{user}"
-          if redis.exists(block_key)
-            redis.setex block_key, block_time, country
-            "REJECT Suspicious activity from #{ip} in #{country} has been blocked. Please try again later or contact the administrator."
-          else
-            redis.setex block_key, block_time, country
-            warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
+          if whitelist.include?(country)
+            redis.sadd(key, country)
+            warning = "WARN User #{user} has moved to #{ip} in #{country}, a whitelisted country."
             tell_postmaster warning
             warning
+          else
+            block_key="justblock:#{user}"
+            if redis.exists(block_key)
+              redis.setex block_key, block_time, country
+              "REJECT Suspicious activity from #{ip} in #{country} has been blocked. Please try again later or contact the administrator."
+            else
+              redis.setex block_key, block_time, country
+              warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
+              tell_postmaster warning
+              warning
+            end
           end
         end
       else
@@ -104,7 +118,7 @@ class Mosso
     if __FILE__==$0
       `#{cmd}`
     else
-      puts cmd
+      # puts cmd
     end
     cmd
   end
@@ -125,7 +139,7 @@ class Mosso
     if __FILE__==$0
       Syslog.log(Syslog::LOG_INFO, str) if Syslog.opened?
     else
-      puts str
+      # puts str
     end
   end
 
