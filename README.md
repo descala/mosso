@@ -8,7 +8,7 @@ It blocks spammers who send SPAM using stolen credentials.
 Install
 -------
 
-Run @bundle install@ or install @geoip@ and @redis@ gems.
+Run `bundle install` or install `geoip` and `redis` gems.
 
 Append to your master.cf
 
@@ -26,7 +26,7 @@ smtpd_recipient_restrictions =
   ...
 ```
 
-it should be called before @permit_sasl_authenticated@
+it should be called before `permit_sasl_authenticated`
 
 Requisites
 ----------
