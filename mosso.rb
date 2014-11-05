@@ -89,7 +89,7 @@ class Mosso
           if whitelist.include?(country)
             redis.sadd(key, country)
             warning = "WARN User #{user} has moved to #{ip} in #{country}, a whitelisted country."
-            tell_postmaster warning
+            tell_postmaster warning, "It has been added to its allowed countries.\n\nMosso."
             warning
           else
             block_key="justblock:#{user}"
@@ -99,7 +99,7 @@ class Mosso
             else
               redis.setex block_key, block_time, country
               warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
-              tell_postmaster warning
+              tell_postmaster warning, warning_message_body(user, country)
               warning
             end
           end
@@ -112,9 +112,22 @@ class Mosso
     end
   end
 
-  def tell_postmaster(msg)
+  def warning_message_body(user,country)
+    %Q(To add this country to the allowed countries of user #{user}
+run this command on host #{@fqdn}:
+
+  redis-cli SADD countries:#{user} #{country}
+
+and to get its currently allowed countries:
+
+  redis-cli SMEMBERS countries:#{user}
+
+Mosso.)
+  end
+
+  def tell_postmaster(subject,msg)
     postmaster="postmaster@#{@fqdn}"
-    cmd="swaks -h-From '#{postmaster}' -t '#{postmaster}' --h-Subject '#{msg}' --body '#{msg}'"
+    cmd="swaks -h-From '#{postmaster}' -t '#{postmaster}' --h-Subject '#{subject}' --body '#{msg}'"
     if __FILE__==$0
       `#{cmd}`
     else

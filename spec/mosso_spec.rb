@@ -57,4 +57,9 @@ EOI
     m=Mosso.new
     expect(m.whitelist).to include('ES')
   end
+  it "issues a warningi message with body" do
+    m=Mosso.new
+    expect(m.warning_message_body('user1','ES')).to match(/redis-cli SADD countries:user1 ES/)
+    expect(m.tell_postmaster("Subject","Body")).to match(/--h-Subject 'Subject' --body 'Body'/)
+  end
 end
