@@ -35,22 +35,22 @@ EOI
   it "records first as allowed country & blocks if abused" do
     m=Mosso.new
     m.block_time=1
-    m.whitelist=[]
+    m.whitelist=['AU']
     m.redis.del "countries:me@example.tld" # cleanup
     m.redis.del "justblock:me@example.tld"
+    expect(m.decide('1.2.3.4','me@example.tld','AU')).to match(/WARN .* whitelisted country/)
     expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
-    expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
-    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/WARN/)
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/WARN .* not allowed/)
     expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/REJECT/)
     sleep 2 # TODO avoid delaying test
-    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/WARN/)
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/WARN .* not allowed/)
   end
   it "has a whitelist" do
     m=Mosso.new
     m.whitelist=['UA']
     m.redis.del "countries:me@example.tld" # cleanup
     m.redis.del "justblock:me@example.tld"
-    expect(m.decide('1.2.3.4','me@example.tld','AU')).to eq('DUNNO')
+    expect(m.decide('1.2.3.4','me@example.tld','AU')).to match(/WARN .* not allowed/)
     expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/has moved to .* whitelisted country/)
   end
   it "has a default whitelist" do
@@ -61,5 +61,18 @@ EOI
     m=Mosso.new
     expect(m.warning_message_body('user1','ES')).to match(/redis-cli SADD countries:user1 ES/)
     expect(m.tell_postmaster("Subject","Body")).to match(/--h-Subject 'Subject' --body 'Body'/)
+  end
+  it "records first as allowed country only for whitelisted countries" do
+    m=Mosso.new
+    m.block_time=1
+    m.whitelist=['UA']
+    m.redis.del "countries:me@example.tld" # cleanup
+    m.redis.del "justblock:me@example.tld"
+    expect(m.decide('1.2.3.4','me@example.tld','AU')).to match(/WARN .* not allowed/)
+    expect(m.decide('1.2.3.4','me@example.tld','AU')).to match(/REJECT/)
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to match(/has moved to .* whitelisted country/)
+    expect(m.decide('176.111.36.1','me@example.tld','UA')).to eq('DUNNO')
+    sleep 2 # TODO avoid delaying test
+    expect(m.decide('176.111.36.1','me@example.tld','AU')).to match(/WARN .* not allowed/)
   end
 end

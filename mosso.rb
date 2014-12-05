@@ -82,32 +82,26 @@ class Mosso
     else
       log "client_address=#{ip} sasl_username=#{user} country=#{country}"
       key="countries:#{user}"
-      if redis.scard(key)>0
-        if redis.sismember(key, country)
-          "DUNNO"
+      if redis.sismember(key, country)
+        "DUNNO"
+      else
+        if whitelist.include?(country)
+          redis.sadd(key, country)
+          warning = "WARN User #{user} has moved to #{ip} in #{country}, a whitelisted country."
+          tell_postmaster warning, "It has been added to its allowed countries.\n\nMosso."
+          warning
         else
-          if whitelist.include?(country)
-            redis.sadd(key, country)
-            warning = "WARN User #{user} has moved to #{ip} in #{country}, a whitelisted country."
-            tell_postmaster warning, "It has been added to its allowed countries.\n\nMosso."
-            warning
+          block_key="justblock:#{user}"
+          if redis.exists(block_key)
+            redis.setex block_key, block_time, country
+            "REJECT Suspicious activity from #{ip} in #{country} has been blocked. Please try again later or contact the administrator."
           else
-            block_key="justblock:#{user}"
-            if redis.exists(block_key)
-              redis.setex block_key, block_time, country
-              "REJECT Suspicious activity from #{ip} in #{country} has been blocked. Please try again later or contact the administrator."
-            else
-              redis.setex block_key, block_time, country
-              warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
-              tell_postmaster warning, warning_message_body(user, country)
-              warning
-            end
+            redis.setex block_key, block_time, country
+            warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
+            tell_postmaster warning, warning_message_body(user, country)
+            warning
           end
         end
-      else
-        # new user
-        redis.sadd(key, country)
-        "DUNNO"
       end
     end
   end
