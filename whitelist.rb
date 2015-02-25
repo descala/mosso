@@ -2,6 +2,7 @@
 # Adjust to your needs
 
 WHITELIST=[
+  '--', # Local Networks
   'AD', # Andorra
   'AT', # Austria
   'BE', # Belgium
