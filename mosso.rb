@@ -110,11 +110,11 @@ class Mosso
     %Q(To add this country to the allowed countries of user #{user}
 run this command on host #{@fqdn}:
 
-  redis-cli SADD countries:#{user} #{country}
+redis-cli SADD countries:#{user} #{country}
 
 and to get its currently allowed countries:
 
-  redis-cli SMEMBERS countries:#{user}
+redis-cli SMEMBERS countries:#{user}
 
 Mosso.)
   end
