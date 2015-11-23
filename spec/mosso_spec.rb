@@ -26,7 +26,7 @@ EOI
   it "uses geoip" do
     m=Mosso.new
     m.attributes[:client_address]='1.2.3.4'
-    expect(m.get_country_code).to eq('AU')
+    expect(m.get_country_code).to eq('US')
     m.attributes[:client_address]='  '
     expect(m.get_country_code).to eq('--')
     m.attributes[:client_address]='176.111.36.1'
