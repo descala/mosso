@@ -28,9 +28,9 @@ smtpd_recipient_restrictions =
 
 it should be called before `permit_sasl_authenticated`
 
-If you want to include information form @/var/log/mail.log@ in notifications,
+If you want to include information form `/var/log/mail.log` in notifications,
 replace "user=nobody" in master.cf with a user with read access
-to @/var/log/mail.log@. Example:
+to `/var/log/mail.log`. Example:
 
 ```
 adduser mosso --ingroup adm --disabled-login --shell /bin/false
