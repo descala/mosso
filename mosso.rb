@@ -94,11 +94,11 @@ class Mosso
           block_key="justblock:#{user}"
           if redis.exists(block_key)
             redis.setex block_key, block_time, country
-            "REJECT Suspicious activity from #{ip} in #{country} has been blocked. Please try again later or contact the administrator."
+            "REJECT Suspicious activity of #{user} from #{ip} in #{country} has been blocked. Please try again later or contact the administrator."
           else
             redis.setex block_key, block_time, country
             warning = "WARN User #{user} is not allowed to send from #{ip} in #{country}"
-            tell_postmaster warning, warning_message_body(user, country)
+            tell_postmaster warning, warning_message_body(user, country, ip)
             warning
           end
         end
@@ -106,7 +106,7 @@ class Mosso
     end
   end
 
-  def warning_message_body(user,country)
+  def warning_message_body(user,country,ip=nil)
     %Q(To add this country to the allowed countries of user #{user}
 run this command on host #{@fqdn}:
 
@@ -115,6 +115,8 @@ redis-cli SADD countries:#{user} #{country}
 and to get its currently allowed countries:
 
 redis-cli SMEMBERS countries:#{user}
+
+#{mail_log_message(ip)}
 
 Mosso.)
   end
@@ -139,6 +141,27 @@ Mosso.)
       @geoip.country(attributes[:client_address]).country_code2
     rescue SocketError
       '--'
+    end
+  end
+
+  def mail_log_message(ip)
+    relevant_log = grep_mail_log(ip)
+    if relevant_log and relevant_log!=''
+      "Grep of #{ip} in #{mail_log_file}:\n\n#{relevant_log}"
+    end
+  end
+
+  def grep_mail_log(ip)
+    if ip and ip.to_s!='' and File.exist?(mail_log_file) and File.readable?(mail_log_file)
+      `grep '#{ip}' #{mail_log_file}`
+    end
+  end
+
+  def mail_log_file
+    if __FILE__==$0
+      "/var/log/mail.log"
+    else
+      "spec/mail_log_example.log"
     end
   end
 

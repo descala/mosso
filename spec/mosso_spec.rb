@@ -57,7 +57,7 @@ EOI
     m=Mosso.new
     expect(m.whitelist).to include('ES')
   end
-  it "issues a warningi message with body" do
+  it "issues a warning message with body" do
     m=Mosso.new
     expect(m.warning_message_body('user1','ES')).to match(/redis-cli SADD countries:user1 ES/)
     expect(m.tell_postmaster("Subject","Body")).to match(/--h-Subject 'Subject' --body 'Body'/)
@@ -74,5 +74,16 @@ EOI
     expect(m.decide('176.111.36.1','me@example.tld','UA')).to eq('DUNNO')
     sleep 2 # TODO avoid delaying test
     expect(m.decide('176.111.36.1','me@example.tld','AU')).to match(/WARN .* not allowed/)
+  end
+  it "appends relevant mail log" do
+    m=Mosso.new
+    expect(m.mail_log_file).to eq("spec/mail_log_example.log")
+    expect(m.grep_mail_log("1.2.3.4")).to match(/server01/)
+    expect(m.grep_mail_log('')).to eq(nil)
+    expect(m.grep_mail_log(nil)).to eq(nil)
+    expect(m.mail_log_message("1.2.3.4")).to match(/^Grep of 1.2.3.4 in/)
+    expect(m.mail_log_message("1.2.3.4")).to match(/server01/)
+    expect(m.mail_log_message("5.5.5.5")).to eq(nil)
+    expect(m.warning_message_body("user2","US","8.8.8.8")).not_to match(/^Grep of/)
   end
 end

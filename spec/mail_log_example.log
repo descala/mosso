@@ -1,0 +1,7 @@
+Nov 23 00:33:36 server01 dovecot: imap-login: Login: user=<user01>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.4, mpid=30166, session=<JGadiSklSwA7BUUB>
+Nov 23 00:33:37 server01 dovecot: imap-login: Login: user=<user01>, method=PLAIN, rip=1.2.3.4, lip=1.2.3.4, mpid=30169, session=<xGKwiSklTAA7BUUB>
+Nov 23 00:33:52 server01 postfix/smtps/smtpd[30186]: connect from unknown[1.2.3.4]
+Nov 23 00:33:53 server01 postfix/smtps/smtpd[30186]: Anonymous TLS connection established from unknown[1.2.3.4]: TLSv1 with cipher ECDHE-RSA-AES256-SHA (256/256 bits)
+Nov 23 00:33:54 server01 mosso[30188]: client_address=1.2.3.4 sasl_username=user01 country=KR
+Nov 23 00:33:55 server01 postfix/smtps/smtpd[30186]: NOQUEUE: warn: RCPT from unknown[1.2.3.4]: User user01 is not allowed to send from 1.2.3.4 in KR; from=<xxx> to=<xxx> proto=ESMTP helo=<[1.2.3.4]>
+Nov 23 00:33:55 server01 postfix/smtps/smtpd[30186]: 1F28B97C033D: client=unknown[1.2.3.4], sasl_method=PLAIN, sasl_username=user01
