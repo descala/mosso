@@ -117,7 +117,6 @@ and to get its currently allowed countries:
 redis-cli SMEMBERS countries:#{user}
 
 #{mail_log_message(ip)}
-
 Mosso.)
   end
 
