@@ -23,7 +23,7 @@ EOI
     Mosso.new(StringIO.new(input),output).run
     expect(output.string).to eq("action=DUNNO\n\n")
   end
-  it "uses geoip" do
+  it "uses country db" do
     m=Mosso.new
     m.attributes[:client_address]='1.2.3.4'
     expect(m.get_country_code).to eq('US')
