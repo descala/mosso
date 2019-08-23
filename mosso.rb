@@ -46,6 +46,7 @@ class Mosso
     @buffer=[]
     @attributes={}
     @db=MaxMindDB.new('/var/lib/GeoIP/GeoLite2-Country.mmdb')
+    @db.local_ip_alias = ''
     @redis=Redis.new
     @fqdn=`hostname -f`.strip
     @block_time=60
