@@ -8,7 +8,7 @@ It blocks spammers who send SPAM using stolen credentials.
 Install
 -------
 
-Run `bundle install` or install `geoip` and `redis` gems.
+Run `bundle install` or install `maxminddb` and `redis` gems.
 
 Append to your master.cf
 
@@ -40,5 +40,6 @@ Requisites
 ----------
 
 ```
-apt-get install geoip-database-contrib swaks redis-server
+apt-get install geoipupdate swaks redis-server
+cp /usr/share/doc/geoipupdate/examples/GeoIP.conf.default /etc/GeoIP.conf
 ```

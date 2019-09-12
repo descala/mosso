@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
 
-gem 'geoip'
+gem 'maxminddb'
 gem 'rspec'
 gem 'redis'

@@ -26,7 +26,7 @@
 require 'rubygems'
 require 'bundler/setup'
 
-require 'geoip'
+require 'maxminddb'
 require 'syslog'
 require 'redis'
 
@@ -45,7 +45,8 @@ class Mosso
     $stdout.sync = true
     @buffer=[]
     @attributes={}
-    @geoip=GeoIP.new('/usr/share/GeoIP/GeoIP.dat',:preload=>true)
+    @db=MaxMindDB.new('/var/lib/GeoIP/GeoLite2-Country.mmdb')
+    @db.local_ip_alias = ''
     @redis=Redis.new
     @fqdn=`hostname -f`.strip
     @block_time=60
@@ -137,8 +138,9 @@ Mosso.)
 
   def get_country_code
     begin
-      @geoip.country(attributes[:client_address]).country_code2
-    rescue SocketError
+      ret=@db.lookup(attributes[:client_address])
+      ret.country.iso_code
+    rescue IPAddr::InvalidAddressError
       '--'
     end
   end
