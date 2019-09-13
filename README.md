@@ -42,4 +42,5 @@ Requisites
 ```
 apt-get install geoipupdate swaks redis-server
 cp /usr/share/doc/geoipupdate/examples/GeoIP.conf.default /etc/GeoIP.conf
+geoipupdate -v
 ```
