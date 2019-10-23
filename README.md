@@ -41,5 +41,11 @@ Requisites
 
 ```
 apt-get install geoipupdate swaks redis-server
+```
+
+Download the mmdb database to /var/lib/GeoIP/GeoLite2-Country.mmdb:
+
+```
 cp /usr/share/doc/geoipupdate/examples/GeoIP.conf.default /etc/GeoIP.conf
+geoipupdate -v
 ```
