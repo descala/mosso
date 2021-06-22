@@ -71,13 +71,11 @@ class Inspector
 
   def report
     str = []
-    str << "#{logins.size} users logged in from new countries on host #{@fqdn}:"
+    str << "#{logins.size} users logged in from new countries on host #{@fqdn}:\n"
     logins.each do |user,data|
       str << "#{user} new login from: #{data[:new].join(', ')} (previous logins: #{data[:old].join(', ')}, sent from: #{data[:sent].join(', ')})"
-      str << "inspect with:   redis-cli SMEMBERS logged_from:#{user}"
-      str << "remove country: redis-cli SREM <COUNTRY> logged_from:#{user}"
     end
-    str.join("\n\n")
+    str.join("\n")
   end
 
   def tell_postmaster(subject,msg)
