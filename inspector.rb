@@ -47,7 +47,7 @@ class Inspector
     # check roundcube logins
     scan_log_file(@roundcube_log_file, LOGIN_REGEXP_RC)
     # send report
-    tell_postmaster('Users logged in from new countries', report) if logins.any?
+    tell_postmaster("Users logged in from new countries on #{@fqdn}", report) if logins.any?
   end
 
   def scan_log_file(file, regex)
