@@ -25,7 +25,7 @@ class Inspector
 
   LOGIN_REGEXP=/(imap|pop3)-login: Login: user=<(?<user>\S+)>, .*rip=(?<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
 
-  attr_accessor :logins
+  attr_accessor :logins, :ip_country
   attr_reader :redis
 
   def initialize(log_file)
@@ -34,7 +34,8 @@ class Inspector
     @db.local_ip_alias = ''
     @redis=Redis.new
     @fqdn=`hostname -f`.strip
-    @logins={} # to store logins from new countries
+    @logins={}     # to store logins from new countries
+    @ip_country={} # ip lookup cache
   end
 
   def run
@@ -42,7 +43,10 @@ class Inspector
       if l =~ LOGIN_REGEXP
         # {"user"=>"user@domain.tld", "ip"=>"1.2.3.4"}
         logged_in = Hash[Regexp.last_match.names.zip(Regexp.last_match.captures)]
-        decide(logged_in['ip'],logged_in['user'],get_country_code(logged_in['ip']))
+        unless ip_country.has_key?(logged_in['ip'])
+          self.ip_country[logged_in['ip']] = get_country_code(logged_in['ip'])
+        end
+        decide(logged_in['ip'],logged_in['user'],ip_country[logged_in['ip']])
       end
     end
     tell_postmaster('Users logged in from new countries', report) if logins.any?
