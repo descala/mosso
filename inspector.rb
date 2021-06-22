@@ -24,12 +24,15 @@ require 'redis'
 class Inspector
 
   LOGIN_REGEXP=/(imap|pop3)-login: Login: user=<(?<user>\S+)>, .*rip=(?<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
+  # roundcube logins, must set $config['log_logins'] = true;
+  LOGIN_REGEXP_RC=/Successful login for (?<user>\S+) .* from (?<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) in session/
 
   attr_accessor :logins, :ip_country
   attr_reader :redis
 
-  def initialize(log_file)
-    @log_file=log_file
+  def initialize(dovecot_log_file, roundcube_log_file)
+    @dovecot_log_file=dovecot_log_file
+    @roundcube_log_file=roundcube_log_file
     @db=MaxMindDB.new('/var/lib/GeoIP/GeoLite2-Country.mmdb')
     @db.local_ip_alias = ''
     @redis=Redis.new
@@ -39,8 +42,17 @@ class Inspector
   end
 
   def run
-    File.read(mail_log_file).each_line do |l|
-      if l =~ LOGIN_REGEXP
+    # check dovecot logins
+    scan_log_file(@dovecot_log_file, LOGIN_REGEXP)
+    # check roundcube logins
+    scan_log_file(@roundcube_log_file, LOGIN_REGEXP_RC)
+    # send report
+    tell_postmaster('Users logged in from new countries', report) if logins.any?
+  end
+
+  def scan_log_file(file, regex)
+    File.read(file).each_line do |l|
+      if l =~ regex
         # {"user"=>"user@domain.tld", "ip"=>"1.2.3.4"}
         logged_in = Hash[Regexp.last_match.names.zip(Regexp.last_match.captures)]
         unless ip_country.has_key?(logged_in['ip'])
@@ -49,7 +61,6 @@ class Inspector
         decide(logged_in['ip'],logged_in['user'],ip_country[logged_in['ip']])
       end
     end
-    tell_postmaster('Users logged in from new countries', report) if logins.any?
   end
 
   def decide(ip,user,country)
@@ -98,14 +109,6 @@ class Inspector
     end
   end
 
-  def mail_log_file
-    if __FILE__==$0
-      @log_file
-    else
-      "spec/mail_log_example.log"
-    end
-  end
-
   def log(str)
     #if __FILE__==$0
     #  Syslog.log(Syslog::LOG_INFO, str) if Syslog.opened?
@@ -117,8 +120,10 @@ class Inspector
 end
 
 if __FILE__==$0
-  log_file = ARGV[0].to_s
-  log_file = "/var/log/mail.log.1" unless log_file.size > 0
-  app = Inspector.new(log_file)
+  dovecot_log_file = ARGV[0].to_s
+  dovecot_log_file = "/var/log/mail.log.1" unless dovecot_log_file.size > 0
+  roundcube_log_file = ARGV[1].to_s
+  roundcube_log_file = "/var/log/roundcube/userlogins.log.1" unless roundcube_log_file.size > 0
+  app = Inspector.new(dovecot_log_file, roundcube_log_file)
   app.run
 end
