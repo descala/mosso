@@ -148,7 +148,7 @@ Mosso.)
   def mail_log_message(ip)
     relevant_log = grep_mail_log(ip)
     if relevant_log and relevant_log!=''
-      "Grep of #{ip} in #{mail_log_file}:\n\n#{relevant_log}"
+      "grep '#{ip}' #{mail_log_file}\n\n#{relevant_log}"
     end
   end
 
