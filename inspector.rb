@@ -39,6 +39,7 @@ class Inspector
     @fqdn=`hostname -f`.strip
     @logins={}     # to store logins from new countries
     @ip_country={} # ip lookup cache
+    @errors = []
   end
 
   def run
@@ -46,8 +47,13 @@ class Inspector
     scan_log_file(@dovecot_log_file, LOGIN_REGEXP)
     # check roundcube logins
     scan_log_file(@roundcube_log_file, LOGIN_REGEXP_RC)
-    # send report
-    tell_postmaster("Users logged in from new countries on #{@fqdn}", report) if logins.any?
+  rescue
+    @errors << $!.message
+  ensure
+    if logins.any? or @errors.any?
+      # send report
+      tell_postmaster("Users logged in from new countries on #{@fqdn}", report)
+    end
   end
 
   def scan_log_file(file, regex)
@@ -82,6 +88,9 @@ class Inspector
 
   def report
     str = []
+    @errors.each do |error|
+      str << "ERROR: #{error}\n\n"
+    end
     str << "#{logins.size} users logged in from new countries on host #{@fqdn}:\n"
     logins.each do |user,data|
       str << "#{user} new login from: #{data[:new].join(', ')} (previous logins: #{data[:old].join(', ')}, sent from: #{data[:sent].join(', ')})"
