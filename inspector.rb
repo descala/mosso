@@ -23,6 +23,10 @@ require 'redis'
 
 class Inspector
 
+  # do not warn countries
+  WHITELIST=%w( es )
+
+  # dovecot logins imap/pop
   LOGIN_REGEXP=/(imap|pop3)-login: Login: user=<(?<user>\S+)>, .*rip=(?<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
   # roundcube logins, must set $config['log_logins'] = true;
   LOGIN_REGEXP_RC=/Successful login for (?<user>\S+) .* from (?<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) in session/
@@ -70,7 +74,7 @@ class Inspector
   end
 
   def decide(ip,user,country)
-    unless user.to_s.empty? or country.to_s.empty?
+    unless user.to_s.empty? or country.to_s.empty? or WHITELIST.include?(country)
       log "client_address=#{ip} sasl_username=#{user} country=#{country}"
       key="logged_from:#{user}"
       unless redis.sismember(key, country)
@@ -114,7 +118,7 @@ class Inspector
       ret=@db.lookup(ip)
       ret.country.iso_code
     rescue IPAddr::InvalidAddressError
-      '--'
+      ''
     end
   end
 
