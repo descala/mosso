@@ -24,7 +24,7 @@ require 'redis'
 class Inspector
 
   # do not warn countries
-  WHITELIST=%w( es )
+  WHITELIST=%w( ES )
 
   # dovecot logins imap/pop
   LOGIN_REGEXP=/(imap|pop3)-login: Login: user=<(?<user>\S+)>, .*rip=(?<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/
