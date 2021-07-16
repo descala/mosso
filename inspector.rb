@@ -61,7 +61,7 @@ class Inspector
   end
 
   def scan_log_file(file, regex)
-    File.read(file).each_line do |l|
+    to_utf(File.read(file)).each_line do |l|
       if l =~ regex
         # {"user"=>"user@domain.tld", "ip"=>"1.2.3.4"}
         logged_in = Hash[Regexp.last_match.names.zip(Regexp.last_match.captures)]
@@ -128,6 +128,29 @@ class Inspector
     #else
     #  # puts str
     #end
+  end
+
+  def to_utf(string, from='ISO-8859-1')
+    return nil if string.nil?
+    unless string.valid_encoding?
+      begin
+        string.encode!('UTF-8', from)
+      rescue Encoding::UndefinedConversionError
+        %w(binary ISO-8859-1).each do |encoding|
+          next if encoding == from
+          break if string.valid_encoding?
+          begin
+            string.encode!('UTF-8', encoding)
+          rescue Encoding::UndefinedConversionError
+            string.encode!(
+              'UTF-8', from, invalid: :replace, undef: :replace, replace: ''
+            )
+          end
+        end
+      end
+    end
+    # remove BOM
+    string.gsub("\xEF\xBB\xBF", '') rescue string
   end
 
 end
